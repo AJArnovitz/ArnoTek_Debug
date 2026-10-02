@@ -18,7 +18,7 @@
 //     Note that the definition of the ArnoTek_Debug variable must come before the include statement
 
 //#define ArnoTek_DEBUG 0
-#define ArnoTek_DEBUG 0
+#define ArnoTek_DEBUG 1
 #include <ArnoTek_Debug.h>
 
 
