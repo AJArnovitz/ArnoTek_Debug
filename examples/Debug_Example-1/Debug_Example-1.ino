@@ -10,26 +10,48 @@
 //
 //******************************************************************
 
+
+
+//          * * *   C o n f i g u r e   D e b u g g i n g   * * *
+
+//     The debugging configuration MUST be specified BEFORE including the ArnoTek_Debug.h file.
+
+#define ArnoTek_DEBUG 0
+
+#define ArnoTek_DEBUG_Terse 1
+
+#define ArnoTek_DEBUG_Verbose 1
+
+
+// Now that debugging has been defined, include the ArnoTek_Debug.h file
+#include <ArnoTek_Debug.h>
+
+
+
 // Include the heartbeat class to toggle the Arduino LED 
 #include <ArnoTek_HeartBeat.h>
 
 
-// *** Configure Debugging ***
-//     Note that the definition of the ArnoTek_Debug variable must come before the include statement
 
-//#define ArnoTek_DEBUG 0
-#define ArnoTek_DEBUG 1
-#include <ArnoTek_Debug.h>
+//                  * * *   C o n s t r u c t o r s   * * *
+
+ArnoTek_HeartBeat HeartBeat((long unsigned)250);                                     // Define heartbeat object (quarter second timer)
+
+// Note: You can reference the ArnoTek debugging controls in your code if you wish
+#if ArnoTek_DEBUG == 1
+    ArnoTek_HeartBeat TimerFunction;   
+#endif
+
+ArnoTek_HeartBeat SpacerFunction; 
+    
 
 
-// Define callback for timer function
-void TimerFunctionCallback(long unsigned);
+
+//                  * * *   D e f i n e   g l o b a l   V a r i a b l e s   * * *
+
+long unsigned myTimer;
 
 
-//                  C o n s t r u c t o r s
-ArnoTek_HeartBeat HeartBeat(500);       // Define heartbeat object to toggle the on board Arduino LED every half second
-
-ArnoTek_HeartBeat TimerFunction(5000, &TimerFunctionCallback);  
 
 
 
@@ -39,21 +61,29 @@ void setup()
 {
   delay(4000);
 
-  // *** Conditionally configure and send these message to the serial monitor ***
-
-  // ArnoTek_DebugInit(115200);
-  // ArnoTek_DebugLn("\n\n*** Starting setup ***\n");
-
-  // ArnoTek_DebugLn("*** Setup complete ***\n");
-
-  //----------------------------------------------------------------------
-
-  // *** Always send these messages to the serial monitor ***
-
   Serial.begin(115200);
-  Serial.println("\n\n*** Starting setup ***\n");
+  Serial.println("\n\n*** Starting setup ***");
 
-  Serial.println("*** Setup complete ***\n");
+  // Conditional print debug statments
+  ArnoTek_DebugLn("\n\t*** Standard debugging is on ***");
+  ArnoTek_DebugLn_Terse("\t\t*** Terse debugging is on  ***");
+  ArnoTek_DebugLn_Verbose("\t\t*** Verbose debugging is on  ***");
+
+  ArnoTek_DebugLn_Terse("\n\t'Terse' debugging is on, waiting an additional 4 seconds");
+  ArnoTek_DebugDelay_Terse(4000);   // Wait another 4 seconds if "Terse" debugging is on
+
+  myTimer = millis();
+
+  // Note: You can reference the ArnoTek debugging controls in your code if you wish
+  #if ArnoTek_DEBUG == 1
+      TimerFunction.Init(myTimer, (long unsigned)2000, 0, &TimerFunctionCallback);     // Call the TimerFunctionCallback every 5 seconds
+  #else
+    Serial.println("\n\n\t*** Debugging is off ***\n");
+  #endif
+
+  SpacerFunction.Init(myTimer, (long unsigned)10001, 0, &SpacerFunctionCallback);  // Call the SpacerFunctionCallback every 25 seconds
+
+  Serial.println("\n*** Setup complete ***\n\n");
 }
 
 
@@ -62,21 +92,39 @@ void setup()
 
 void loop() 
 {
-  HeartBeat.Toggle();     // (not necessary for ArnoTek_Debug utility)
+  HeartBeat.Toggle();
+  myTimer = millis();
 
-  TimerFunction.Toggle();
+  // Only generate the code if we are not debugging
+  #if ArnoTek_DEBUG == 1
+      TimerFunction.Toggle(myTimer);
+  #endif
+
+  SpacerFunction.Toggle(myTimer);
 }
 
 
 
 //                  * * *   C a l l b a c k   F u n c t i o n s   * * *
 
-void TimerFunctionCallback(long unsigned myCurrentTime)
-{
-  // Conditionally send messages to the serial monitor
-  ArnoTek_Debug("TimerFunctionCallback entered: ");
-  ArnoTek_Debug(myCurrentTime);
-  ArnoTek_Debug("\t (0x");
-  ArnoTek_Debug2(myCurrentTime, HEX);
-  ArnoTek_DebugLn(")");
-}
+// We don't need to compile these functions if we are not debugging
+#if ArnoTek_DEBUG == 1
+
+    void TimerFunctionCallback(ArnoTek_HeartBeat *myObject, long unsigned myCurrentTime)
+    {
+      ArnoTek_Debug("TimerFunctionCallback entered: ");
+      ArnoTek_Debug(myCurrentTime);
+      ArnoTek_Debug("\t (0x");
+      ArnoTek_Debug2(myCurrentTime, HEX);
+      ArnoTek_Debug(")");
+      ArnoTek_Debug_Terse("\t*** Terse ***");
+      ArnoTek_Debug_Verbose("\t*** Verbose ***");
+      ArnoTek_DebugLn("");
+    }
+
+#endif
+
+  void SpacerFunctionCallback(ArnoTek_HeartBeat *myObject, long unsigned myCurrentTime)
+  {   
+    Serial.println("");
+  }
